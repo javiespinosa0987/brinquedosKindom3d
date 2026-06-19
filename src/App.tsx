@@ -5,6 +5,7 @@ import {
   Trash2, Upload, User, LogOut, X,
 } from 'lucide-react'
 
+
 type Category = 'Todos' | 'Brinquedos sensoriais' | 'Chaveiros' | 'Brinquedos'
 type Product = {
   id: number
@@ -73,6 +74,7 @@ function App() {
   const [demoEmail, setDemoEmail] = useState('')
   const googleButtonRef = useRef<HTMLDivElement>(null)
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
+  console.log("GOOGLE CLIENT ID:", googleClientId)
   const [cart, setCart] = useState<CartItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('forma3d-cart-br') || '[]') }
     catch { return [] }
@@ -366,4 +368,10 @@ function App() {
   )
 }
 
-export default App
+
+
+
+
+
+export default App;
+
