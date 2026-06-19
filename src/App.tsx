@@ -194,24 +194,7 @@ setCustomer(userData);
     );
   }
 };
-const testFirebase = async () => {
-  try {
-    const docRef = await addDoc(
-      collection(db, "teste"),
-      {
-        nome: "Teste Kingdom3D",
-        data: new Date().toISOString()
-      }
-    );
 
-    console.log("TESTE OK:", docRef.id);
-    alert("Firebase conectado!");
-
-  } catch (error) {
-    console.error("TESTE ERRO:", error);
-    alert("Firebase erro. Veja o console.");
-  }
-};
 
   const openNewProduct = () => {
     setEditingId(null)
@@ -311,7 +294,7 @@ const testFirebase = async () => {
       <main>
         <section className="hero" id="inicio">
         <button
-  onClick={testFirebase}
+  
   style={{
     padding: "10px",
     margin: "20px",
