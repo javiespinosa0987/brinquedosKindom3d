@@ -1,3 +1,6 @@
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "./firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight, Check, ChevronDown, Clock3, CreditCard, Edit3, ImagePlus, LockKeyhole,
@@ -75,6 +78,8 @@ function App() {
   const googleButtonRef = useRef<HTMLDivElement>(null)
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
   console.log("GOOGLE CLIENT ID:", googleClientId)
+  console.log("VERSION FIREBASE TEST 2026");
+alert("VERSION FIREBASE TEST 2026");
   const [cart, setCart] = useState<CartItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('forma3d-cart-br') || '[]') }
     catch { return [] }
@@ -96,10 +101,23 @@ function App() {
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         use_fedcm_for_prompt: true,
-        callback: response => {
+        callback: async (response) => {
           try {
             const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-            setCustomer({ name: payload.name, email: payload.email, picture: payload.picture })
+            const userData = {
+  name: payload.name,
+  email: payload.email,
+  picture: payload.picture,
+  createdAt: new Date().toISOString()
+};
+
+setCustomer(userData);
+
+ await setDoc(
+  doc(db, "usuarios", payload.email),
+  userData,
+  { merge: true }
+);
             setAccountOpen(false)
           } catch { alert('Não foi possível concluir o acesso com Google.') }
         },
@@ -139,11 +157,61 @@ function App() {
     .map((item, itemIndex) => itemIndex === index ? { ...item, quantity: item.quantity + amount } : item)
     .filter(item => item.quantity > 0))
 
-  const finishOrder = (event: React.FormEvent) => {
-    event.preventDefault()
-    setOrdered(true)
-    setCart([])
+  
+  const finishOrder = async (event: React.FormEvent) => {
+  event.preventDefault();
+
+  const pedido = {
+    cliente: customer?.name || "Visitante",
+    email: customer?.email || "",
+    productos: cart,
+    total: subtotal + shipping,
+    estado: "pendente",
+    fecha: new Date().toISOString()
+  };
+
+  console.log("DATOS DEL PEDIDO:", pedido);
+
+  try {
+    const docRef = await addDoc(
+      collection(db, "pedidos"),
+      pedido
+    );
+
+    console.log("PEDIDO GUARDADO:", docRef.id);
+
+    alert(`Pedido salvo com sucesso: ${docRef.id}`);
+
+    setOrdered(true);
+    setCart([]);
+
+  } catch (error) {
+    console.error("ERRO FIREBASE PEDIDO:", error);
+
+    alert(
+      "ERRO FIREBASE: " +
+      JSON.stringify(error)
+    );
   }
+};
+const testFirebase = async () => {
+  try {
+    const docRef = await addDoc(
+      collection(db, "teste"),
+      {
+        nome: "Teste Kingdom3D",
+        data: new Date().toISOString()
+      }
+    );
+
+    console.log("TESTE OK:", docRef.id);
+    alert("Firebase conectado!");
+
+  } catch (error) {
+    console.error("TESTE ERRO:", error);
+    alert("Firebase erro. Veja o console.");
+  }
+};
 
   const openNewProduct = () => {
     setEditingId(null)
@@ -242,6 +310,17 @@ function App() {
 
       <main>
         <section className="hero" id="inicio">
+        <button
+  onClick={testFirebase}
+  style={{
+    padding: "10px",
+    margin: "20px",
+    background: "green",
+    color: "white"
+  }}
+>
+  TESTAR FIREBASE
+</button>
           <div className="hero-copy">
             <div className="eyebrow"><Sparkles size={15}/> Impresso localmente, pensado para você</div>
             <h1>Ideias que<br/><em>ganham forma.</em></h1>
