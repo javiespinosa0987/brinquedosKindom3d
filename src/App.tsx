@@ -1,6 +1,13 @@
-import { collection, addDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  doc,
+  setDoc,
+  getDocs,
+  updateDoc
+} from "firebase/firestore";
+
 import { db } from "./firebase";
-import { doc, setDoc } from "firebase/firestore";
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight, Check, ChevronDown, Clock3, CreditCard, Edit3, ImagePlus, LockKeyhole,
@@ -25,6 +32,14 @@ type Product = {
 type CartItem = Product & { quantity: number; material: string; color: string }
 type ProductForm = Omit<Product, 'id'>
 type Customer = { name: string; email: string; picture?: string }
+type Pedido = {
+  id: string
+  cliente: string
+  email: string
+  total: number
+  estado: string
+  fecha: string
+}
 
 const defaultProducts: Product[] = [
   { id: 1, name: 'Dragão Articulado', category: 'Brinquedos', price: 69.9, description: 'Dragão flexível e articulado, impresso em uma única peça.', leadTime: '2 a 3 dias', tone: 'coral', shape: 'lamp', badge: 'Mais vendido' },
@@ -43,6 +58,7 @@ const emptyProduct: ProductForm = {
 const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 
 function App() {
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [category, setCategory] = useState<Category>('Todos')
   const [query, setQuery] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
@@ -84,7 +100,49 @@ function App() {
     try { return JSON.parse(localStorage.getItem('forma3d-cart-br') || '[]') }
     catch { return [] }
   })
+  useEffect(() => {
+  loadPedidos()
+  const changeStatus = async (
+  pedidoId: string,
+  estado: string
+) => {
 
+  try {
+
+    await updateDoc(
+      doc(db, "pedidos", pedidoId),
+      {
+        estado
+      }
+    )
+
+    loadPedidos()
+
+  } catch (error) {
+
+    console.error(error)
+
+  }
+}
+}, [])
+
+const loadPedidos = async () => {
+  try {
+    const snapshot = await getDocs(
+      collection(db, "pedidos")
+    )
+
+    const lista = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Pedido[]
+
+    setPedidos(lista)
+
+  } catch (error) {
+    console.error(error)
+  }
+}
   useEffect(() => localStorage.setItem('forma3d-cart-br', JSON.stringify(cart)), [cart])
   useEffect(() => {
     try { localStorage.setItem('forma3d-products', JSON.stringify(products)) }
@@ -109,6 +167,8 @@ function App() {
   email: payload.email,
   picture: payload.picture,
   createdAt: new Date().toISOString()
+  
+
 };
 
 setCustomer(userData);
@@ -270,6 +330,30 @@ setCustomer(userData);
     window.google?.accounts.id.disableAutoSelect()
     setCustomer(null)
   }
+  const changeStatus = async (
+  pedidoId: string,
+  novoStatus: string
+) => {
+  try {
+
+    await updateDoc(
+      doc(db, "pedidos", pedidoId),
+      {
+        estado: novoStatus
+      }
+    )
+
+    loadPedidos()
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao atualizar pedido:",
+      error
+    )
+
+  }
+}
 
   return (
     <div className="app">
@@ -370,6 +454,64 @@ setCustomer(userData);
         <label>Senha<input type="password" required value={adminPassword} onChange={event => setAdminPassword(event.target.value)} placeholder="Digite a senha" autoFocus/></label>{adminError && <span className="admin-error">{adminError}</span>}
         <button className="button primary wide" type="submit">Entrar no painel <ArrowRight size={18}/></button><small>Senha inicial desta demonstração: <strong>forma3d</strong></small>
       </form> : <div className="admin-content">
+        <div className="orders-panel">
+
+  <h3>Pedidos Recebidos</h3>
+
+  {pedidos.map(pedido => (
+
+    <div
+      key={pedido.id}
+      className="order-card"
+    >
+
+      <h4>{pedido.cliente}</h4>
+
+      <p>{pedido.email}</p>
+
+      <strong>
+        {money(pedido.total)}
+      </strong>
+
+      <small>
+        {new Date(
+          pedido.fecha
+        ).toLocaleString()}
+      </small>
+
+      <select
+        value={pedido.estado}
+        onChange={(e) =>
+          changeStatus(
+            pedido.id,
+            e.target.value
+          )
+        }
+      >
+
+        <option value="pendente">
+          Pendente
+        </option>
+
+        <option value="em produção">
+          Em Produção
+        </option>
+
+        <option value="pronto">
+          Pronto
+        </option>
+
+        <option value="entregue">
+          Entregue
+        </option>
+
+      </select>
+
+    </div>
+
+  ))}
+
+</div>
         <div className="admin-head"><div><span className="kicker">KINGDOM 3D</span><h2>Gerenciar catálogo</h2><p>{products.length} produtos cadastrados</p></div><button className="button admin-new" onClick={openNewProduct}><Plus size={18}/> Novo produto</button></div>
         <div className="admin-layout">
           <form className="product-form" onSubmit={saveProduct}>
