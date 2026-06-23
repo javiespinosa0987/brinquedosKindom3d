@@ -293,12 +293,6 @@ setCustomer(userData);
 
       <main>
         <section className="hero" id="inicio">
-        <button
-  
-  
->
- 
-</button>
           <div className="hero-copy">
             <div className="eyebrow"><Sparkles size={15}/> Impresso localmente, pensado para você</div>
             <h1>Ideias que<br/><em>ganham forma.</em></h1>
