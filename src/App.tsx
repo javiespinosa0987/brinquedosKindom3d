@@ -78,8 +78,8 @@ function App() {
   const googleButtonRef = useRef<HTMLDivElement>(null)
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
   console.log("GOOGLE CLIENT ID:", googleClientId)
-  console.log("VERSION FIREBASE TEST 2026");
-alert("VERSION FIREBASE TEST 2026");
+  
+
   const [cart, setCart] = useState<CartItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('forma3d-cart-br') || '[]') }
     catch { return [] }
@@ -295,14 +295,9 @@ setCustomer(userData);
         <section className="hero" id="inicio">
         <button
   
-  style={{
-    padding: "10px",
-    margin: "20px",
-    background: "green",
-    color: "white"
-  }}
+  
 >
-  TESTAR FIREBASE
+ 
 </button>
           <div className="hero-copy">
             <div className="eyebrow"><Sparkles size={15}/> Impresso localmente, pensado para você</div>
