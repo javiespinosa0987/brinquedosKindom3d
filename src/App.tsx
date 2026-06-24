@@ -36,9 +36,11 @@ type Pedido = {
   id: string
   cliente: string
   email: string
-  total: number
+  telefone: string
   estado: string
   fecha: string
+  productos: CartItem[]
+  total: number
 }
 
 const defaultProducts: Product[] = [
@@ -58,7 +60,28 @@ const emptyProduct: ProductForm = {
 const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 
 function App() {
+  const [telefone, setTelefone] = useState("")
   const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const pedidosPendentes = pedidos.filter(
+  pedido => pedido.estado === "pendente"
+).length
+
+const pedidosProducao = pedidos.filter(
+  pedido => pedido.estado === "producao"
+).length
+
+const pedidosFinalizados = pedidos.filter(
+  pedido => pedido.estado === "finalizado"
+).length
+
+const pedidosEntregues = pedidos.filter(
+  pedido => pedido.estado === "entregue"
+).length
+
+const faturamentoTotal = pedidos.reduce(
+  (total, pedido) => total + Number(pedido.total || 0),
+  0
+)
   const [category, setCategory] = useState<Category>('Todos')
   const [query, setQuery] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
@@ -221,14 +244,16 @@ setCustomer(userData);
   const finishOrder = async (event: React.FormEvent) => {
   event.preventDefault();
 
+
   const pedido = {
-    cliente: customer?.name || "Visitante",
-    email: customer?.email || "",
-    productos: cart,
-    total: subtotal + shipping,
-    estado: "pendente",
-    fecha: new Date().toISOString()
-  };
+  cliente: customer?.name || "Visitante",
+  email: customer?.email || "",
+  telefone: telefone,
+  productos: cart,
+  total: subtotal + shipping,
+  estado: "pendente",
+  fecha: new Date().toISOString()
+};
 
   console.log("DATOS DEL PEDIDO:", pedido);
 
@@ -237,6 +262,35 @@ setCustomer(userData);
       collection(db, "pedidos"),
       pedido
     );
+    const mensaje = `
+🛒 NOVO PEDIDO
+
+Pedido: ${docRef.id}
+
+Cliente: ${pedido.cliente}
+
+Email: ${pedido.email}
+
+Telefone: ${pedido.telefone}
+
+Total: R$ ${pedido.total}
+
+Pagamento: ${payment}
+
+Entrega: ${delivery}
+
+Data: ${new Date().toLocaleString("pt-BR")}
+
+Produtos:
+${cart.map(item =>
+`• ${item.name} x${item.quantity}`
+).join('\n')}
+`;
+
+window.open(
+`https://wa.me/5519994365222?text=${encodeURIComponent(mensaje)}`,
+'_blank'
+);
 
     console.log("PEDIDO GUARDADO:", docRef.id);
 
@@ -454,6 +508,36 @@ setCustomer(userData);
         <label>Senha<input type="password" required value={adminPassword} onChange={event => setAdminPassword(event.target.value)} placeholder="Digite a senha" autoFocus/></label>{adminError && <span className="admin-error">{adminError}</span>}
         <button className="button primary wide" type="submit">Entrar no painel <ArrowRight size={18}/></button><small>Senha inicial desta demonstração: <strong>forma3d</strong></small>
       </form> : <div className="admin-content">
+        <div className="dashboard-grid">
+
+  <div className="dashboard-card">
+    <h3>Pendentes</h3>
+    <strong>{pedidosPendentes}</strong>
+  </div>
+
+  <div className="dashboard-card">
+    <h3>Em Produção</h3>
+    <strong>{pedidosProducao}</strong>
+  </div>
+
+  <div className="dashboard-card">
+    <h3>Finalizados</h3>
+    <strong>{pedidosFinalizados}</strong>
+  </div>
+
+  <div className="dashboard-card">
+    <h3>Entregues</h3>
+    <strong>{pedidosEntregues}</strong>
+  </div>
+
+  <div className="dashboard-card faturamento">
+    <h3>Faturamento Total</h3>
+    <strong>
+      {money(faturamentoTotal)}
+    </strong>
+  </div>
+
+</div>
         <div className="orders-panel">
 
   <h3>Pedidos Recebidos</h3>
@@ -489,21 +573,10 @@ setCustomer(userData);
         }
       >
 
-        <option value="pendente">
-          Pendente
-        </option>
-
-        <option value="em produção">
-          Em Produção
-        </option>
-
-        <option value="pronto">
-          Pronto
-        </option>
-
-        <option value="entregue">
-          Entregue
-        </option>
+        <option value="pendente">Pendente</option>
+        <option value="producao">Em Produção</option>
+        <option value="finalizado">Finalizado</option>
+        <option value="entregue">Entregue</option>
 
       </select>
 
@@ -538,7 +611,13 @@ setCustomer(userData);
         <div className="checkout-title"><span className="kicker">FINALIZAR PEDIDO</span><h2>Como você quer receber?</h2></div><form onSubmit={finishOrder}>
           {customer ? <div className="checkout-identity"><div>{customer.picture ? <img src={customer.picture} alt="" referrerPolicy="no-referrer"/> : <span>{customer.name.charAt(0).toUpperCase()}</span>}<p>Comprando como <strong>{customer.name}</strong><small>{customer.email}</small></p></div><button type="button" onClick={logout}>Sair</button></div> : <div className="guest-identity"><User/><div><strong>Compra como visitante</strong><small>Você pode finalizar sem criar uma conta.</small></div><button type="button" onClick={() => setAccountOpen(true)}>Entrar com Google</button></div>}
           <div className="delivery-options"><button type="button" className={delivery === 'pickup' ? 'selected' : ''} onClick={() => setDelivery('pickup')}><PackageCheck/><span><strong>Retirada no ateliê</strong><small>Grátis · Avisaremos quando estiver pronto</small></span></button><button type="button" className={delivery === 'delivery' ? 'selected' : ''} onClick={() => setDelivery('delivery')}><MapPin/><span><strong>Entrega local</strong><small>R$ 14,90 · Região urbana</small></span></button></div>
-          <div className="form-grid"><label>Nome completo<input required defaultValue={customer?.name || ''} placeholder="Seu nome"/></label><label>Celular<input required type="tel" placeholder="(11) 99999-9999"/></label><label className="full">E-mail<input required type="email" defaultValue={customer?.email || ''} placeholder="voce@exemplo.com.br"/></label>{delivery === 'delivery' && <><label className="full">Endereço<input required placeholder="Rua, número e complemento"/></label><label>CEP<input required inputMode="numeric" placeholder="00000-000"/></label><label>Cidade<input required placeholder="Sua cidade"/></label></>}</div>
+          <div className="form-grid"><label>Nome completo<input required defaultValue={customer?.name || ''} placeholder="Seu nome"/></label><label>Celular<input
+  required
+  type="tel"
+  value={telefone}
+  onChange={(e) => setTelefone(e.target.value)}
+  placeholder="(11) 99999-9999"
+/></label><label className="full">E-mail<input required type="email" defaultValue={customer?.email || ''} placeholder="voce@exemplo.com.br"/></label>{delivery === 'delivery' && <><label className="full">Endereço<input required placeholder="Rua, número e complemento"/></label><label>CEP<input required inputMode="numeric" placeholder="00000-000"/></label><label>Cidade<input required placeholder="Sua cidade"/></label></>}</div>
           <section className="payment-section">
             <h3>Forma de pagamento</h3>
             <div className="payment-options">

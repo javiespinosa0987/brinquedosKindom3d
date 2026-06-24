@@ -140,3 +140,32 @@ fieldset{border:0;padding:0;margin:20px 0}legend{font-size:12px;font-weight:600;
   width:100%;
   padding:8px;
 }
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px;
+  margin-bottom:24px;
+}
+
+.dashboard-card{
+  background:#fff;
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.dashboard-card h3{
+  margin:0;
+  font-size:14px;
+  color:#666;
+}
+
+.dashboard-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:32px;
+}
+
+.faturamento{
+  grid-column:span 2;
+}
