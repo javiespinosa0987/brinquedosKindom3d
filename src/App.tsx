@@ -14,6 +14,7 @@ import {
   MapPin, Menu, Minus, PackageCheck, Plus, QrCode, Search, ShoppingBag, Sparkles,
   Trash2, Upload, User, LogOut, X,
 } from 'lucide-react'
+import PedidoDetalhe from "./PedidoDetalhe";
 
 
 type Category = 'Todos' | 'Brinquedos sensoriais' | 'Chaveiros' | 'Brinquedos'
@@ -62,6 +63,8 @@ const money = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'curren
 function App() {
   const [telefone, setTelefone] = useState("")
   const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [pedidoSelecionado, setPedidoSelecionado] =
+  useState<Pedido | null>(null)
   const pedidosPendentes = pedidos.filter(
   pedido => pedido.estado === "pendente"
 ).length
@@ -82,6 +85,28 @@ const faturamentoTotal = pedidos.reduce(
   (total, pedido) => total + Number(pedido.total || 0),
   0
 )
+const produtosVendidos: Record<string, number> = {}
+
+pedidos.forEach(pedido => {
+
+  pedido.productos?.forEach(
+    (produto: any) => {
+
+      if (!produtosVendidos[produto.name]) {
+        produtosVendidos[produto.name] = 0
+      }
+
+      produtosVendidos[produto.name] +=
+        produto.quantity || 1
+    }
+  )
+
+})
+const rankingProdutos =
+  Object.entries(produtosVendidos)
+    .sort(
+      (a, b) => b[1] - a[1]
+    )
   const [category, setCategory] = useState<Category>('Todos')
   const [query, setQuery] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
@@ -539,15 +564,43 @@ window.open(
 
 </div>
         <div className="orders-panel">
+          <div className="dashboard-card">
+
+  <h3>🔥 Produtos Mais Vendidos</h3>
+
+  {rankingProdutos.length === 0 ? (
+    <p>Nenhuma venda registrada.</p>
+  ) : (
+    rankingProdutos.slice(0, 5).map(([nome, quantidade], index) => (
+      <div
+        key={nome}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "8px 0"
+        }}
+      >
+        <strong>
+          #{index + 1} {nome}
+        </strong>
+
+        <span>{quantidade} vendas</span>
+      </div>
+    ))
+  )}
+
+</div>
 
   <h3>Pedidos Recebidos</h3>
 
   {pedidos.map(pedido => (
 
     <div
-      key={pedido.id}
-      className="order-card"
-    >
+  key={pedido.id}
+  className="order-card"
+  onClick={() => setPedidoSelecionado(pedido)}
+  style={{ cursor: "pointer" }}
+>
 
       <h4>{pedido.cliente}</h4>
 
@@ -564,14 +617,15 @@ window.open(
       </small>
 
       <select
-        value={pedido.estado}
-        onChange={(e) =>
-          changeStatus(
-            pedido.id,
-            e.target.value
-          )
-        }
-      >
+  value={pedido.estado}
+  onClick={(e) => e.stopPropagation()}
+  onChange={(e) =>
+    changeStatus(
+      pedido.id,
+      e.target.value
+    )
+  }
+>
 
         <option value="pendente">Pendente</option>
         <option value="producao">Em Produção</option>
@@ -636,6 +690,128 @@ window.open(
           <div className="order-summary"><div><span>Produtos</span><strong>{money(subtotal)}</strong></div><div><span>{delivery === 'pickup' ? 'Retirada no ateliê' : 'Entrega local'}</span><strong>{shipping ? money(shipping) : 'Grátis'}</strong></div><div className="grand-total"><span>Total</span><strong>{money(subtotal + shipping)}</strong></div></div>
           <button className="button primary wide" type="submit">{payment === 'pix' ? 'Gerar pagamento PIX' : `Pagar com cartão de ${payment === 'credit' ? 'crédito' : 'débito'}`} <ArrowRight size={18}/></button><p className="demo-note">Modo de demonstração: nenhum pagamento ou dado de cartão será processado.</p>
         </form></>}</div></div>}
+        {pedidoSelecionado && (
+
+<div className="overlay">
+
+<div
+  style={{
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%,-50%)",
+    background: "white",
+    padding: "30px",
+    borderRadius: "12px",
+    zIndex: 9999,
+    width: "500px",
+    boxShadow: "0 0 30px rgba(0,0,0,.3)"
+  }}
+>
+
+<button
+className="close"
+onClick={() =>
+setPedidoSelecionado(null)
+}
+>
+
+<X/>
+
+</button>
+
+<h2>
+Pedido
+</h2>
+
+<p>
+
+<strong>Cliente:</strong>
+
+{pedidoSelecionado.cliente}
+
+</p>
+
+<p>
+
+<strong>Telefone:</strong>
+
+{pedidoSelecionado.telefone}
+
+</p>
+
+<p>
+
+<strong>Email:</strong>
+
+{pedidoSelecionado.email}
+
+</p>
+
+<p>
+
+<strong>Status:</strong>
+
+{pedidoSelecionado.estado}
+
+</p>
+
+<p>
+
+<strong>Total:</strong>
+
+{money(pedidoSelecionado.total)}
+
+</p>
+
+<hr/>
+
+<h3>
+
+Produtos
+
+</h3>
+
+{pedidoSelecionado.productos.map(
+(produto:any,index:number)=>(
+
+<div
+key={index}
+style={{
+marginBottom:20
+}}
+>
+
+<strong>
+
+{produto.name}
+
+</strong>
+
+<br/>
+
+Quantidade:
+{produto.quantity}
+
+<br/>
+
+Material:
+{produto.material}
+
+<br/>
+
+Cor:
+{produto.color}
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+)}
     </div>
   )
 }
